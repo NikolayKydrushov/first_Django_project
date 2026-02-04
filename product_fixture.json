@@ -1,0 +1,41 @@
+[
+{
+    "model": "catalog.product",
+    "pk": 2,
+    "fields": {
+        "name": "Холодильник",
+        "description": "Холодный",
+        "picture": "",
+        "category": 1,
+        "purchase_price": 5000.0,
+        "created_at": "2026-02-04T18:57:58.872Z",
+        "updated_at": "2026-02-04T19:01:15.274Z"
+    }
+},
+{
+    "model": "catalog.product",
+    "pk": 4,
+    "fields": {
+        "name": "Береза",
+        "description": "Россия",
+        "picture": "",
+        "category": 2,
+        "purchase_price": 7000.0,
+        "created_at": "2026-02-04T18:59:03.345Z",
+        "updated_at": "2026-02-04T19:01:42.244Z"
+    }
+},
+{
+    "model": "catalog.product",
+    "pk": 5,
+    "fields": {
+        "name": "Дуб",
+        "description": "Вайб",
+        "picture": "",
+        "category": 2,
+        "purchase_price": 9000.0,
+        "created_at": "2026-02-04T18:59:29.426Z",
+        "updated_at": "2026-02-04T19:01:47.316Z"
+    }
+}
+]
