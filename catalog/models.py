@@ -14,8 +14,6 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-    product4 = Product.objects.create(name='Дуб', description='Вайб', picture='', category=category2, purchase_price=9000)
-
     # 1. Product:
     #     * наименование,
     #     * описание,
