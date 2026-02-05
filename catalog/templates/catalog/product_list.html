@@ -1,0 +1,15 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Список продуктов{% endblock %}
+
+{% block content %}
+{% include 'catalog/header.html' %}
+<h2>Список продуктов</h2>
+<ul class="list-group">
+    {% for product in products %}
+        <li class="list-group-item">
+            {{ book.title }} - {{ book.publication_date|date:"d M Y" }} - {{ book.author.first_name }} {{ book.author.last_name }}
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}
