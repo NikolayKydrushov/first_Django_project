@@ -1,0 +1,66 @@
+{% extends 'blog/base_blog.html' %}
+
+{% block title %}
+    {% if form.instance.pk %}Изменить запись{% else %}Новая запись{% endif %}
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">
+    {% if form.instance.pk %}
+        Изменить запись
+    {% else %}
+        Новая запись
+    {% endif %}
+</h2>
+
+<form method="post" enctype="multipart/form-data" class="border p-4 rounded bg-white">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label for="id_title" class="form-label">Заголовок *</label>
+        <input type="text" class="form-control" id="id_title" name="title"
+               value="{{ form.title.value|default:'' }}" required>
+        {% if form.title.errors %}
+            <div class="text-danger">{{ form.title.errors }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="id_content" class="form-label">Текст *</label>
+        <textarea class="form-control" id="id_content" name="content"
+                  rows="8" required>{{ form.content.value|default:'' }}</textarea>
+        {% if form.content.errors %}
+            <div class="text-danger">{{ form.content.errors }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="id_preview" class="form-label">Изображение</label>
+        <input type="file" class="form-control" id="id_preview" name="preview">
+        {% if form.preview.errors %}
+            <div class="text-danger">{{ form.preview.errors }}</div>
+        {% endif %}
+
+        {% if form.instance.preview %}
+            <div class="mt-2">
+                <small>Текущее изображение:</small><br>
+                <img src="{{ form.instance.preview.url }}" alt="Preview" style="max-height: 100px;">
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="id_is_published"
+               name="is_published" {% if form.is_published.value %}checked{% endif %}>
+        <label class="form-check-label" for="id_is_published">Опубликовать</label>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">
+            {% if form.instance.pk %}Сохранить{% else %}Создать{% endif %}
+        </button>
+        <a href="{% if form.instance.pk %}{% url 'blog:post_detail' form.instance.pk %}{% else %}{% url 'blog:post_list' %}{% endif %}"
+           class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+{% endblock %}
