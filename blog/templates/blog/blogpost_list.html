@@ -1,0 +1,44 @@
+{% extends 'blog/base_blog.html' %}
+
+{% block title %}Все записи{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Блоговые записи</h1>
+
+<a href="{% url 'blog:post_create' %}" class="btn btn-success mb-4">Создать запись</a>
+
+{% if posts %}
+    <div class="row">
+        {% for post in posts %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                {% if post.preview %}
+                    <img src="{{ post.preview.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                {% endif %}
+
+                <div class="card-body">
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <p class="card-text">{{ post.content|truncatewords:20 }}</p>
+
+                    <div class="text-muted small mb-2">
+                        {{ post.created_at|date:"d.m.Y" }} |
+                        Просмотров: {{ post.views_count }}
+                        {% if not post.is_published %}
+                            <span class="badge bg-warning text-dark">Черновик</span>
+                        {% endif %}
+                    </div>
+
+                    <a href="{% url 'blog:post_detail' post.pk %}" class="btn btn-primary btn-sm">Читать</a>
+                    <a href="{% url 'blog:post_update' post.pk %}" class="btn btn-secondary btn-sm">Изменить</a>
+                    <a href="{% url 'blog:post_delete' post.pk %}" class="btn btn-danger btn-sm">Удалить</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        Записей пока нет. <a href="{% url 'blog:post_create' %}" class="alert-link">Создайте первую!</a>
+    </div>
+{% endif %}
+{% endblock %}
