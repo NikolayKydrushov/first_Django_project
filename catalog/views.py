@@ -1,8 +1,19 @@
-from django.shortcuts import render
+from django.contrib import messages
+# from django.shortcuts import render
 from django.http import HttpResponse
-from django.views.generic import TemplateView, FormView, DetailView, ListView
+from django.urls import reverse_lazy
+from django.views.generic import (
+    TemplateView,
+    FormView,
+    DetailView,
+    ListView,
+    CreateView,
+    UpdateView,
+    DeleteView
+    )
 
 from .models import Product, Category
+from .forms import ProductForm
 
 
 # Create your views here.
@@ -40,11 +51,55 @@ class ProductDetailView(DetailView):
     context_object_name = 'product'
     pk_url_kwarg = 'product_id'
 
-# CreateView, ListView, DetailView, UpdateView, DeleteView
 
 # Контроллер списка продуктов
 class ProductListView(ListView):
     model = Product
     template_name = 'catalog/products_list.html'
     context_object_name = 'products'
+
+
+class ProductCreateView(CreateView):
+    model = Product
+    form_class = ProductForm
+    template_name = 'catalog/product_form.html'
+    success_url = reverse_lazy('catalog:product_list')  # Используйте ваше имя URL
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Продукт успешно создан!')
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Пожалуйста, исправьте ошибки в форме.')
+        return super().form_invalid(form)
+
+
+class ProductUpdateView(UpdateView):
+    model = Product
+    form_class = ProductForm
+    template_name = 'catalog/product_form.html'
+    pk_url_kwarg = 'pk'
+    success_url = reverse_lazy('catalog:product_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Продукт успешно обновлен!')
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Пожалуйста, исправьте ошибки в форме.')
+        return super().form_invalid(form)
+
+
+class ProductDeleteView(DeleteView):
+    model = Product
+    template_name = 'catalog/product_confirm_delete.html'
+    pk_url_kwarg = 'pk'
+    success_url = reverse_lazy('catalog:product_list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Продукт успешно удален!')
+        return super().delete(request, *args, **kwargs)
+
+
 
