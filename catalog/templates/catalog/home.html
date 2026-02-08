@@ -10,8 +10,15 @@
 {% block content %}
 <div class="container">
     {% if products %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Наши продукты</h2>
+        <a href="{% url 'catalog:product_list' %}" class="btn btn-outline-primary">
+            Весь каталог →
+        </a>
+    </div>
+
     <div class="row text-center">
-        {% for product in products %}
+        {% for product in products|slice:":6" %}
         <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
             <div class="card h-100 mb-4 box-shadow">
                 <div class="card-header">
@@ -42,7 +49,7 @@
 
                     <!-- Кнопки действий -->
                     <div class="d-grid gap-2 mt-auto">
-                        <a href="/product/{{ product.id }}/"
+                        <a href="{% url 'catalog:product_detail' product_id=product.id %}"
                            class="btn btn-lg btn-block btn-outline-primary">
                             Подробнее
                         </a>
@@ -59,11 +66,11 @@
         <div class="col-md-8 text-center">
             <div class="alert alert-info mt-5">
                 <h4 class="alert-heading">Товаров пока нет!</h4>
-                <p>Каталог пуст. Добавьте товары через админ-панель или используйте команду создания тестовых данных.</p>
+                <p>Каталог пуст. Добавьте товары через форму создания.</p>
                 <hr>
                 <p class="mb-0">
-                    <a href="/admin/catalog/product/add/" class="btn btn-primary">Добавить товар</a>
-                    <a href="{% url 'contacts' %}" class="btn btn-outline-primary">Связаться с нами</a>
+                    <a href="{% url 'catalog:product_create' %}" class="btn btn-primary">Добавить товар</a>
+                    <a href="{% url 'catalog:contacts' %}" class="btn btn-outline-primary">Связаться с нами</a>
                 </p>
             </div>
         </div>
