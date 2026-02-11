@@ -53,6 +53,19 @@
                            class="btn btn-lg btn-block btn-outline-primary">
                             Подробнее
                         </a>
+
+                        {% if user.is_authenticated %}
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'catalog:product_update' product.id %}"
+                                   class="btn btn-lg btn-block btn-outline-warning">
+                                    Редактировать
+                                </a>
+                                <a href="{% url 'catalog:product_delete' product.id %}"
+                                   class="btn btn-lg btn-block btn-outline-danger">
+                                    Удалить
+                                </a>
+                            </div>
+                        {% endif %}
                         <button type="button" class="btn btn-lg btn-block btn-primary">Купить</button>
                     </div>
                 </div>

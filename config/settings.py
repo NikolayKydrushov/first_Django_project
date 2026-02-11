@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "catalog",
     "blog",
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -131,6 +132,19 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+AUTH_USER_MODEL = 'users.CustomUser'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.yandex.ru'
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = 'kolya29042909@yandex.ru'
+EMAIL_HOST_PASSWORD = 'dddxlqwyvfxhljrj'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+DEFAULT_FROM_EMAIL = 'kolya29042909@yandex.ru'
 
 MIDIA_UPL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -138,5 +152,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
+
+# URL для перенаправления неавторизованных пользователей
+LOGIN_URL = 'users:login'  # Куда отправлять на вход
+LOGIN_REDIRECT_URL = 'catalog:product_list'  # Куда после успешного входа
+LOGOUT_REDIRECT_URL = 'catalog:product_list'  # Куда после выхода
 
 STATIC_URL = "static/"
