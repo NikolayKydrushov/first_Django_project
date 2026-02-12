@@ -1,3 +1,5 @@
+from django.core.cache import cache
+from django.views.generic import ListView
 from django.db import models
 from .models import Product, Category
 
@@ -28,3 +30,23 @@ class ProductService:
             return products
         except Category.DoesNotExist:
             return Product.objects.none()
+
+
+class CachedProductListView(ListView):
+    model = Product
+    template_name = 'catalog/products_list.html'
+    context_object_name = 'products'
+
+    def get_queryset(self):
+        # Ключ для кеша
+        cache_key = 'all_products_list'
+
+        # Пробуем получить из кеша
+        queryset = cache.get(cache_key)
+
+        # Если в кеше нет - получаем из БД и сохраняем в кеш
+        if not queryset:
+            queryset = super().get_queryset()
+            cache.set(cache_key, queryset, 60 * 15)  # 15 минут
+
+        return queryset

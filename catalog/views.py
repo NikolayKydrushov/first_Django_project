@@ -22,7 +22,7 @@ from .mixins import (
     OwnerRequiredMixin,
 )
 from .models import Category, Product
-from .services import ProductService
+from .services import ProductService, CachedProductListView
 
 
 class HomeView(TemplateView):
@@ -222,3 +222,28 @@ def user_logout(request):
     logout(request)
     messages.success(request, "Вы успешно вышли из системы.")
     return redirect("catalog:product_list")
+
+
+class ProductListView(LoginRequiredMixin, CachedProductListView):  # Наследуемся от CachedProductListView
+    login_url = 'users:login'
+
+    def get_queryset(self):
+        # Используем кешированный queryset из родительского класса
+        queryset = super().get_queryset()
+        user = self.request.user
+
+        # Фильтруем по правам доступа (кешируется только для модераторов)
+        if not user.has_perm('catalog.can_unpublish_product'):
+            queryset = queryset.filter(
+                models.Q(owner=user) |
+                models.Q(status='published')
+            ).distinct()
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = Category.objects.annotate(
+            product_count=models.Count('product')
+        ).order_by('name')
+        return context
