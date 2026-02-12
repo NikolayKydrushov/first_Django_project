@@ -1,5 +1,9 @@
+from django.contrib.auth.models import User
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.conf import settings
+from django.urls import reverse
+
 
 # Create your models here.
 
@@ -41,9 +45,33 @@ class Product(models.Model):
         auto_now=True,
         verbose_name='дата последнего изменения'
     )
+    STATUS_CHOICES = [
+        ('draft', 'Черновик'),
+        ('published', 'Опубликован'),
+        ('archived', 'В архиве'),
+    ]
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='draft',
+        verbose_name='статус публикации'
+    )
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,  # Если пользователь удален, владелец становится NULL
+        null=True,
+        blank=True,
+        verbose_name='Владелец',
+        related_name='products'  # Позволяет обращаться user.products.all()
+    )
+
 
     def __str__(self):
         return self.name
+
+    def get_absolute_url(self):
+        return reverse('catalog:product_detail', args=[str(self.id)])
 
     # 1. Product:
     #     * наименование,
@@ -58,6 +86,9 @@ class Product(models.Model):
         verbose_name = 'Продукт'
         verbose_name_plural = 'Продукты'
         ordering = ['name']
+        permissions = [
+            ('can_unpublish_product', 'Может отменять публикацию продукта'),
+        ]
 
 
 class Category(models.Model):

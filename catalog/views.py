@@ -1,41 +1,33 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import logout
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
-from django.contrib.auth import login, authenticate, logout
-# from django.shortcuts import render
+from django.db import models
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import (
-    TemplateView,
-    FormView,
-    DetailView,
-    ListView,
-    CreateView,
-    UpdateView,
-    DeleteView
-    )
+    TemplateView, DetailView, ListView,
+    CreateView, UpdateView, DeleteView
+)
+from django.core.exceptions import PermissionDenied
 
 from .models import Product, Category
-from .forms import ProductForm
+from .forms import ProductForm, ProductModerationForm
+from .mixins import OwnerRequiredMixin, OwnerOrModeratorRequiredMixin  # Импортируем миксины
 
 
-# Create your views here.
-
-# Контроллер главной страницы
 class HomeView(TemplateView):
     template_name = 'catalog/home.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['products'] = Product.objects.all()
+        # Показываем только опубликованные продукты
+        context['products'] = Product.objects.filter(status='published')
         context['title'] = 'Skystore - Главная'
         return context
 
-    # def post(self, request, *args, **kwargs):
-    #     return HttpResponse("Метод не поддерживается", status=405)
 
-
-# Контроллер страницы контактов (с обработкой POST)
 class ContactsView(TemplateView):
     template_name = 'catalog/contacts.html'
 
@@ -44,10 +36,9 @@ class ContactsView(TemplateView):
         email = request.POST.get('email')
         message = request.POST.get('message')
         print(f"Новое сообщение от {name} ({email}): {message}")
-        return HttpResponse(f"Спасибо, {name}! Ваше сообщение получено. Мы свяжемся с вами по {email}.")
+        return HttpResponse(f"Спасибо, {name}! Ваше сообщение получено.")
 
 
-# Контроллер деталей продуктов
 class ProductDetailView(LoginRequiredMixin, DetailView):
     model = Product
     template_name = 'catalog/product_detail.html'
@@ -55,22 +46,54 @@ class ProductDetailView(LoginRequiredMixin, DetailView):
     pk_url_kwarg = 'product_id'
     login_url = 'users:login'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        product = self.get_object()
 
-# Контроллер списка продуктов
-class ProductListView(ListView):
+        # Проверяем различные права для отображения кнопок
+        context['is_owner'] = product.owner == user
+        context['can_unpublish'] = user.has_perm('catalog.can_unpublish_product')
+        context['can_delete'] = user.has_perm('catalog.delete_product')
+        context['can_edit'] = context['is_owner'] or context['can_unpublish']
+
+        return context
+
+
+class ProductListView(LoginRequiredMixin, ListView):
     model = Product
     template_name = 'catalog/products_list.html'
     context_object_name = 'products'
+    login_url = 'users:login'
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Модераторы видят все продукты
+        if user.has_perm('catalog.can_unpublish_product'):
+            return Product.objects.all()
+
+        # Обычные пользователи видят свои продукты и опубликованные чужие
+        return Product.objects.filter(
+            models.Q(owner=user) |  # Свои продукты
+            models.Q(status='published')  # Опубликованные чужие
+        ).distinct()
 
 
 class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = 'catalog/product_form.html'
-    success_url = reverse_lazy('catalog:product_list')  # Используйте ваше имя URL
+    success_url = reverse_lazy('catalog:product_list')
     login_url = 'users:login'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
+        # Продукт сохраняется в form.save() с автоматической установкой владельца
         response = super().form_valid(form)
         messages.success(self.request, 'Продукт успешно создан!')
         return response
@@ -80,13 +103,22 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
         return super().form_invalid(form)
 
 
-class ProductUpdateView(LoginRequiredMixin, UpdateView):
+class ProductUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+    """
+    Обновление продукта - доступно только владельцу
+    Модераторы НЕ могут редактировать чужие продукты
+    """
     model = Product
     form_class = ProductForm
     template_name = 'catalog/product_form.html'
     pk_url_kwarg = 'pk'
     success_url = reverse_lazy('catalog:product_list')
     login_url = 'users:login'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         messages.success(self.request, 'Продукт успешно обновлен!')
@@ -97,7 +129,10 @@ class ProductUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_invalid(form)
 
 
-class ProductDeleteView(LoginRequiredMixin, DeleteView):
+class ProductDeleteView(LoginRequiredMixin, OwnerOrModeratorRequiredMixin, DeleteView):
+    """
+    Удаление продукта - доступно владельцу ИЛИ модератору
+    """
     model = Product
     template_name = 'catalog/product_confirm_delete.html'
     pk_url_kwarg = 'pk'
@@ -105,8 +140,36 @@ class ProductDeleteView(LoginRequiredMixin, DeleteView):
     login_url = 'users:login'
 
     def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Продукт успешно удален!')
-        return super().delete(request, *args, **kwargs)
+        self.object = self.get_object()
+        product_name = self.object.name
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f'Продукт "{product_name}" успешно удален!')
+        return response
+
+
+class ProductUnpublishView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """Отмена публикации продукта - только для модераторов"""
+    model = Product
+    template_name = 'catalog/product_confirm_unpublish.html'
+    permission_required = 'catalog.can_unpublish_product'
+    login_url = 'users:login'
+    pk_url_kwarg = 'pk'
+
+    def get_success_url(self):
+        return reverse_lazy('catalog:product_detail', kwargs={'product_id': self.object.pk})
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.status = 'draft'
+        self.object.save()
+        messages.success(request, f'Публикация продукта "{self.object.name}" отменена')
+        return redirect(self.get_success_url())
+
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            messages.error(self.request, 'У вас нет прав для отмены публикации')
+            return redirect('catalog:product_detail', product_id=self.get_object().pk)
+        return super().handle_no_permission()
 
 
 def user_logout(request):
@@ -114,5 +177,3 @@ def user_logout(request):
     logout(request)
     messages.success(request, 'Вы успешно вышли из системы.')
     return redirect('catalog:product_list')
-
-

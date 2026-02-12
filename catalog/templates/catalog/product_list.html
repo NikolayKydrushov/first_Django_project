@@ -1,85 +1,70 @@
 {% extends 'catalog/base.html' %}
 
-{% block title %}Список продуктов{% endblock %}
+{% block title %}Продукты - Skystore{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/">Главная</a></li>
-            <li class="breadcrumb-item active">Список продуктов</li>
-        </ol>
-    </nav>
-
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Список продуктов</h2>
-        <a href="{% url 'catalog:product_create' %}" class="btn btn-primary">
-            Добавить продукт
+        <h1>Каталог продуктов</h1>
+        <a href="{% url 'catalog:product_create' %}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Добавить продукт
         </a>
     </div>
 
-    {% if products %}
     <div class="row">
         {% for product in products %}
-        <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
-            <div class="card h-100 mb-4 box-shadow">
-                <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">{{ product.name }}</h4>
-                </div>
-                <div class="card-body d-flex flex-column">
-                    <h1 class="card-title pricing-card-title">{{ product.purchase_price }} руб.</h1>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if product.picture %}
+                        <img src="{{ product.picture.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                            <span class="text-muted">Нет изображения</span>
+                        </div>
+                    {% endif %}
 
-                    <!-- Обрезанное описание до 100 символов -->
-                    <div class="mb-3 flex-grow-1">
-                        <p class="text-start text-muted" style="
-                            display: -webkit-box;
-                            -webkit-line-clamp: 3;
-                            -webkit-box-orient: vertical;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
-                            max-height: 4.5em;
-                            line-height: 1.5em;
-                        ">
-                            {{ product.description|truncatechars:100 }}
-                        </p>
-                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <span class="badge
+                                {% if product.status == 'published' %}bg-success
+                                {% elif product.status == 'archived' %}bg-secondary
+                                {% else %}bg-warning text-dark{% endif %}">
+                                {% if product.status == 'published' %}
+                                    Опубликован
+                                {% elif product.status == 'archived' %}
+                                    В архиве
+                                {% else %}
+                                    Черновик
+                                {% endif %}
+                            </span>
+                        </div>
 
-                    <ul class="list-unstyled mt-3 mb-4 text-start m-3">
-                        <li><strong>Категория:</strong> {{ product.category.name }}</li>
-                        <li><small class="text-muted">Добавлен: {{ product.created_at|date:"d.m.Y" }}</small></li>
-                    </ul>
+                        <p class="card-text">{{ product.description|truncatewords:20 }}</p>
 
-                    <!-- Кнопки действий -->
-                    <div class="d-grid gap-2 mt-auto">
-                        <a href="{% url 'catalog:product_detail' product_id=product.id %}"
-                           class="btn btn-block btn-outline-primary">
-                            Подробнее
-                        </a>
-                        <div class="btn-group" role="group">
-                            <a href="{% url 'catalog:product_update' pk=product.id %}"
-                               class="btn btn-outline-warning">Редактировать</a>
-                            <a href="{% url 'catalog:product_delete' pk=product.id %}"
-                               class="btn btn-outline-danger">Удалить</a>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="h5 text-primary">{{ product.purchase_price }} руб.</span>
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> {{ product.owner.username|default:"Неизвестно" }}
+                            </small>
                         </div>
                     </div>
+
+                    <div class="card-footer">
+                        <a href="{% url 'catalog:product_detail' product.id %}" class="btn btn-primary w-100">
+                            Подробнее
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    Продукты не найдены.
+                    <a href="{% url 'catalog:product_create' %}">Создайте первый продукт!</a>
+                </div>
+            </div>
         {% endfor %}
     </div>
-    {% else %}
-    <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <div class="alert alert-info mt-5">
-                <h4 class="alert-heading">Продуктов пока нет!</h4>
-                <p>Каталог пуст. Добавьте первый продукт.</p>
-                <hr>
-                <p class="mb-0">
-                    <a href="{% url 'catalog:product_create' %}" class="btn btn-primary">Добавить продукт</a>
-                </p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
