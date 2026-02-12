@@ -29,13 +29,53 @@
 
         <!-- Информация о товаре -->
         <div class="col-md-6">
+            <!-- Заголовок со статусом и кнопками модерации -->
             <div class="d-flex justify-content-between align-items-start mb-3">
-                <h1 class="display-5">{{ product.name }}</h1>
+                <div>
+                    <h1 class="display-5">{{ product.name }}</h1>
+                    <!-- Отображение статуса публикации с цветовой индикацией -->
+                    <span class="badge fs-6 mt-2
+                        {% if product.status == 'published' %}bg-success
+                        {% elif product.status == 'archived' %}bg-secondary
+                        {% else %}bg-warning text-dark{% endif %}">
+                        {% if product.status == 'published' %}
+                            <i class="fas fa-check-circle"></i> Опубликован
+                        {% elif product.status == 'archived' %}
+                            <i class="fas fa-archive"></i> В архиве
+                        {% else %}
+                            <i class="fas fa-pencil-alt"></i> Черновик
+                        {% endif %}
+                    </span>
+                    {% if product.owner %}
+                        <small class="d-block text-muted mt-1">
+                            <i class="fas fa-user"></i> Владелец: {{ product.owner.username }}
+                        </small>
+                    {% endif %}
+                </div>
+
+                <!-- Группа кнопок с проверкой прав -->
                 <div class="btn-group">
+                    <!-- Кнопка редактирования (доступна всем авторизованным) -->
                     <a href="{% url 'catalog:product_update' pk=product.id %}"
-                       class="btn btn-warning btn-sm">Редактировать</a>
-                    <a href="{% url 'catalog:product_delete' pk=product.id %}"
-                       class="btn btn-danger btn-sm">Удалить</a>
+                       class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit"></i> Редактировать
+                    </a>
+
+                    <!-- Кнопка отмены публикации (только для модераторов) -->
+                    {% if perms.catalog.can_unpublish_product and product.status == 'published' %}
+                        <a href="{% url 'catalog:product_unpublish' pk=product.id %}"
+                           class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-eye-slash"></i> Снять с публикации
+                        </a>
+                    {% endif %}
+
+                    <!-- Кнопка удаления (только для модераторов) -->
+                    {% if perms.catalog.delete_product %}
+                        <a href="{% url 'catalog:product_delete' pk=product.id %}"
+                           class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Удалить
+                        </a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -47,7 +87,7 @@
             <div class="card mb-4 box-shadow">
                 <div class="card-body">
                     <h5 class="card-title">Описание</h5>
-                    <p class="card-text">{{ product.description }}</p>
+                    <p class="card-text">{{ product.description|linebreaks }}</p>
                 </div>
             </div>
 
@@ -70,8 +110,51 @@
                 </div>
             </div>
 
+            <!-- Информация для модераторов (видна только им) -->
+            {% if perms.catalog.can_unpublish_product %}
+            <div class="alert alert-info mb-4">
+                <small>
+                    <i class="fas fa-shield-alt"></i>
+                    <strong>Панель модератора:</strong><br>
+                    Текущий статус:
+                    {% if product.status == 'published' %}
+                        <span class="badge bg-success">Опубликован</span>
+                        <br>Продукт виден всем посетителям сайта.
+                    {% elif product.status == 'archived' %}
+                        <span class="badge bg-secondary">В архиве</span>
+                        <br>Продукт скрыт и недоступен для покупки.
+                    {% else %}
+                        <span class="badge bg-warning text-dark">Черновик</span>
+                        <br>Продукт виден только вам.
+                    {% endif %}
+                </small>
+            </div>
+            {% endif %}
+
+            <!-- Сообщение о неопубликованном продукте для владельца -->
+            {% if product.status != 'published' and user.is_authenticated %}
+            <div class="alert alert-warning mb-4">
+                <i class="fas fa-info-circle"></i>
+                Этот продукт находится в статусе
+                <strong>
+                    {% if product.status == 'archived' %}архив{% else %}черновик{% endif %}
+                </strong>
+                и не виден другим пользователям.
+            </div>
+            {% endif %}
+
             <div class="d-grid gap-2">
-                <button class="btn btn-lg btn-primary" type="button">Купить</button>
+                <!-- Блокировка кнопки покупки для неопубликованных продуктов -->
+                {% if product.status == 'published' %}
+                    <button class="btn btn-lg btn-primary" type="button">
+                        <i class="fas fa-shopping-cart"></i> Купить
+                    </button>
+                {% else %}
+                    <button class="btn btn-lg btn-secondary" type="button" disabled>
+                        <i class="fas fa-ban"></i> Недоступно для покупки
+                    </button>
+                {% endif %}
+
                 <a href="{% url 'catalog:product_list' %}" class="btn btn-lg btn-outline-primary">
                     ← Вернуться к списку продуктов
                 </a>
@@ -79,4 +162,46 @@
         </div>
     </div>
 </div>
+
+<!-- Модальное окно для подтверждения отмены публикации (опционально) -->
+{% if perms.catalog.can_unpublish_product and product.status == 'published' %}
+<div class="modal fade" id="unpublishModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title text-white">Подтверждение отмены публикации</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите отменить публикацию продукта <strong>{{ product.name }}</strong>?</p>
+                <p class="text-muted small">После отмены публикации продукт будет скрыт из общего доступа.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" action="{% url 'catalog:product_unpublish' pk=product.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning">
+                        Да, отменить публикацию
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт для модального окна (добавьте, если используете модалку) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var unpublishBtn = document.querySelector('a[href*="unpublish"]');
+    if (unpublishBtn) {
+        unpublishBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var modal = new bootstrap.Modal(document.getElementById('unpublishModal'));
+            modal.show();
+        });
+    }
+});
+</script>
+{% endif %}
+
 {% endblock %}

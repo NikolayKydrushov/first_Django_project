@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from .models import Product
 
 
@@ -8,7 +9,8 @@ class ProductForm(forms.ModelForm):
         fields = ['name', 'description', 'category', 'purchase_price', 'picture']
 
     def __init__(self, *args, **kwargs):
-        super(ProductForm, self).__init__(*args, **kwargs)
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
 
         # 1. Поле "Наименование" (name)
         self.fields['name'].widget.attrs.update({
@@ -57,6 +59,20 @@ class ProductForm(forms.ModelForm):
         self.fields['picture'].label = 'Фотография'
         self.fields['picture'].help_text = 'Загрузите изображение продукта (JPG, PNG, GIF)'
 
+        if self.user and self.user.has_perm('catalog.can_unpublish_product'):
+            if 'status' not in self.fields:
+                self.fields['status'] = forms.ChoiceField(
+                    choices=Product.STATUS_CHOICES,
+                    initial=self.instance.status if self.instance and self.instance.pk else 'draft',
+                    label='Статус публикации',
+                    help_text='Выберите статус продукта',
+                    widget=forms.Select(attrs={
+                        'class': 'form-select',
+                    })
+                )
+
+
+
     # Метод валидации названия
     def clean_name(self):
         name = self.cleaned_data.get('name')
@@ -85,14 +101,10 @@ class ProductForm(forms.ModelForm):
     def clean_description(self):
         description = self.cleaned_data.get('description')
 
-        # Если description равен None, возвращаем пустую строку
         if description is None:
             return ''
-
-        # Убираем пробелы
         description = description.strip()
 
-        # Если после удаления пробелов строка пустая, возвращаем пустую строку
         if not description:
             return ''
 
@@ -109,29 +121,60 @@ class ProductForm(forms.ModelForm):
 
         return description
 
+
     # Метод валидации цены
     def clean_purchase_price(self):
         """Валидация цены продукта - проверка, что цена не отрицательная"""
         price = self.cleaned_data.get('purchase_price')
 
-        # Проверяем, что цена указана
         if price is None:
             raise forms.ValidationError("Цена обязательна для заполнения")
 
-        # Проверяем, что цена не отрицательная
         if price < 0:
             raise forms.ValidationError("Цена не может быть отрицательной")
 
-        # Проверка на слишком большую цену
         if price > 1000000:  # Максимум 1 миллион
             raise forms.ValidationError(
                 "Цена слишком высокая. Максимальная цена - 1 000 000."
             )
 
-        # Проверка на слишком маленькую цену
         if 0 < price < 0.01:  # Минимум 0.01
             raise forms.ValidationError(
                 "Цена слишком низкая. Минимальная цена - 0.01."
             )
 
         return round(price, 2)
+
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+
+        # Если продукт новый (еще нет pk) и пользователь авторизован
+        if not instance.pk and self.user and self.user.is_authenticated:
+            instance.owner = self.user
+
+        if commit:
+            instance.save()
+            self.save_m2m()
+
+        return instance
+
+
+
+class ProductModerationForm(forms.ModelForm):
+    """Форма для модерации продуктов (только для модераторов)"""
+
+    class Meta:
+        model = Product
+        fields = ['status']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'status' in self.fields:
+            self.fields['status'].widget.attrs.update({
+                'class': 'form-select',
+            })
+            self.fields['status'].label = 'Статус публикации'
+            self.fields['status'].help_text = 'Выберите статус продукта'
+            self.fields['status'].required = True
+
