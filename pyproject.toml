@@ -10,10 +10,16 @@ requires-python = ">=3.13"
 dependencies = [
     "psycopg2-binary (>=2.9.11,<3.0.0)",
     "pillow (>=12.1.0,<13.0.0)",
-    "ipython (>=9.10.0,<10.0.0)"
+    "ipython (>=9.10.0,<10.0.0)",
+    "redis (>=7.1.1,<8.0.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.lint.dependencies]
+black = "^26.1.0"
+isort = "^7.0.0"
+

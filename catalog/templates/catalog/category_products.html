@@ -1,0 +1,83 @@
+{% extends 'catalog/base.html' %}
+
+{% block title %}{{ category.name }} - Skystore{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'catalog:product_list' %}">Продукты</a></li>
+            {% if category %}
+                <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+            {% endif %}
+        </ol>
+    </nav>
+
+    {% if category %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Продукты в категории "{{ category.name }}"</h1>
+            <a href="{% url 'catalog:product_create' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Добавить продукт
+            </a>
+        </div>
+
+        {% if category.description %}
+            <div class="alert alert-info mb-4">
+                {{ category.description }}
+            </div>
+        {% endif %}
+
+        <!-- Список продуктов -->
+        <div class="row">
+            {% for product in products %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        {% if product.picture %}
+                            <img src="{{ product.picture.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                                <span class="text-muted">Нет изображения</span>
+                            </div>
+                        {% endif %}
+
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <span class="badge bg-info mb-2">{{ product.category.name }}</span>
+                            <p class="card-text">{{ product.description|truncatewords:20 }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h5 text-primary">{{ product.purchase_price }} руб.</span>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ product.owner.username|default:"Неизвестно" }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{% url 'catalog:product_detail' product.id %}" class="btn btn-primary w-100">
+                                Подробнее
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        В категории "{{ category.name }}" пока нет продуктов.
+                        <a href="{% url 'catalog:product_create' %}" class="alert-link">
+                            Создать продукт в этой категории
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-danger">
+            Категория не найдена.
+            <a href="{% url 'catalog:product_list' %}" class="alert-link">
+                Вернуться к списку продуктов
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
