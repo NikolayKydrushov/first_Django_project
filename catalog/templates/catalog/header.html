@@ -1,0 +1,47 @@
+<header class="p-3 bg-dark text-white">
+    <div class="container">
+        <div class="d-flex flex-wrap align-items-center justify-content-between">
+            <!-- Логотип и главное меню -->
+            <div class="d-flex align-items-center">
+                <a href="{% url 'catalog:home' %}" class="d-flex align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
+                    <span class="fs-4 fw-bold">Skystore</span>
+                </a>
+
+                <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0 ms-4">
+                    <li><a href="{% url 'catalog:home' %}" class="nav-link px-2 text-white">Главная</a></li>
+                    <li><a href="{% url 'catalog:product_list' %}" class="nav-link px-2 text-white">Каталог</a></li>
+                    <li><a href="{% url 'catalog:contacts' %}" class="nav-link px-2 text-white">Контакты</a></li>
+                    {% if user.is_authenticated %}
+                    <li><a href="{% url 'catalog:product_create' %}" class="nav-link px-2 text-warning">+ Добавить товар</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <!-- Блок авторизации -->
+            <div class="d-flex align-items-center">
+                {% if user.is_authenticated %}
+                    <!-- Пользователь авторизован -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                            {{ user.email|truncatechars:20 }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form method="post" action="{% url 'users:logout' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        Выйти
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <!-- Гость -->
+                    <a href="{% url 'users:login' %}" class="btn btn-outline-light me-2">Войти</a>
+                    <a href="{% url 'users:register' %}" class="btn btn-warning">Регистрация</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</header>

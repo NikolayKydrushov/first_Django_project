@@ -1,0 +1,14 @@
+<div class="alert alert-info">
+    <strong>{{ product.name }}</strong>
+    <br>
+    <small class="text-muted">
+        Текущий статус:
+        {% if product.status == 'published' %}
+            <span class="badge bg-success">Опубликован</span>
+        {% elif product.status == 'archived' %}
+            <span class="badge bg-secondary">В архиве</span>
+        {% else %}
+            <span class="badge bg-warning">Черновик</span>
+        {% endif %}
+    </small>
+</div>

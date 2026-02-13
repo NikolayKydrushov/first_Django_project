@@ -1,0 +1,260 @@
+{% extends 'catalog/base.html' %}
+
+{% block title %}
+    {% if form.instance.pk %}Редактирование {{ form.instance.name }}{% else %}Создание нового продукта{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'catalog:product_list' %}">Продукты</a></li>
+            <li class="breadcrumb-item active">
+                {% if form.instance.pk %}Редактирование{% else %}Создание{% endif %}
+            </li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mb-4 box-shadow">
+                <div class="card-header">
+                    <h4 class="my-0 font-weight-normal">
+                        {% if form.instance.pk %}
+                            Редактирование продукта: {{ form.instance.name }}
+                        {% else %}
+                            Создание нового продукта
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Поле Наименование -->
+                        <div class="mb-4">
+                            <label for="id_name" class="form-label fw-semibold">
+                                Наименование <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   name="name"
+                                   id="id_name"
+                                   class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                                   placeholder="Введите наименование продукта"
+                                   value="{{ form.name.value|default:'' }}"
+                                   required>
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Поле Описание -->
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label fw-semibold">
+                                Описание
+                            </label>
+                            <textarea
+                                name="description"
+                                id="id_description"
+                                class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                                placeholder="Введите описание продукта"
+                                rows="4">{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.help_text %}
+                                <div class="form-text text-muted">{{ form.description.help_text }}</div>
+                            {% endif %}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Поле Категория -->
+                        <div class="mb-4">
+                            <label for="id_category" class="form-label fw-semibold">
+                                Категория <span class="text-danger">*</span>
+                            </label>
+                            <select
+                                name="category"
+                                id="id_category"
+                                class="form-select {% if form.category.errors %}is-invalid{% endif %}"
+                                required>
+                                <option value="">Выберите категорию</option>
+                                {% for choice in form.category.field.choices %}
+                                    {% if choice.0 %}
+                                        <option value="{{ choice.0 }}"
+                                            {% if form.category.value == choice.0 %}selected{% endif %}>
+                                            {{ choice.1 }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.category.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Поле Цена -->
+                        <div class="mb-4">
+                            <label for="id_purchase_price" class="form-label fw-semibold">
+                                Цена за покупку <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group" style="max-width: 250px;">
+                                <input type="number"
+                                       name="purchase_price"
+                                       id="id_purchase_price"
+                                       class="form-control {% if form.purchase_price.errors %}is-invalid{% endif %}"
+                                       placeholder="0.00"
+                                       value="{{ form.purchase_price.value|default:'' }}"
+                                       step="0.01"
+                                       min="0"
+                                       required>
+                                <span class="input-group-text">руб.</span>
+                            </div>
+                            {% if form.purchase_price.help_text %}
+                                <div class="form-text text-muted mt-2">
+                                    {{ form.purchase_price.help_text }}
+                                </div>
+                            {% endif %}
+                            {% if form.purchase_price.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.purchase_price.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Поле Фотография -->
+                        <div class="mb-4">
+                            <label for="id_picture" class="form-label fw-semibold">
+                                Фотография
+                            </label>
+                            <input type="file"
+                                   name="picture"
+                                   id="id_picture"
+                                   class="form-control {% if form.picture.errors %}is-invalid{% endif %}"
+                                   accept="image/*">
+                            {% if form.picture.help_text %}
+                                <div class="form-text text-muted">{{ form.picture.help_text }}</div>
+                            {% endif %}
+                            {% if form.picture.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.picture.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Блок с запрещенными словами -->
+                        <div class="alert alert-warning mt-4">
+                            <h6 class="fw-bold mb-3">Запрещенные слова:</h6>
+                            <div class="row g-2">
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">казино</span>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">криптовалюта</span>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">крипта</span>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">биржа</span>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">дешево</span>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">бесплатно</span>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">обман</span>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">полиция</span>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <span class="badge bg-danger d-block py-2">радар</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'catalog:product_list' %}" class="btn btn-lg btn-outline-primary">
+                                    ← Назад
+                                </a>
+                                <button type="submit" class="btn btn-lg btn-primary">
+                                    {% if form.instance.pk %}Сохранить изменения{% else %}Создать продукт{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Дополнительные стили Bootstrap -->
+<style>
+    /* Улучшение внешнего вида полей */
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Стили для поля файла */
+    .form-control[type="file"] {
+        padding: 0.375rem 0.75rem;
+        cursor: pointer;
+    }
+
+    .form-control[type="file"]::file-selector-button {
+        padding: 0.375rem 0.75rem;
+        margin: -0.375rem -0.75rem;
+        margin-inline-end: 0.75rem;
+        color: #212529;
+        background-color: #e9ecef;
+        border: 0;
+        border-radius: 0.375rem;
+        transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    }
+
+    .form-control[type="file"]::file-selector-button:hover {
+        background-color: #dde0e3;
+    }
+
+    /* Адаптивные бейджи */
+    .badge {
+        font-size: 0.9rem;
+        font-weight: 500;
+        padding: 0.5em 0.75em;
+    }
+
+    /* Улучшение отступов */
+    .mb-4 {
+        margin-bottom: 1.5rem !important;
+    }
+
+    /* Стили для breadcrumb */
+    .breadcrumb {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 0.75rem 1rem;
+    }
+</style>
+{% endblock %}
